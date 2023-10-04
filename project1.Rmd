@@ -1,0 +1,303 @@
+---
+title: "project"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+date: "2023-05-05"
+---
+```{r}
+library(tidyverse)
+library(conflicted)  
+
+library(tidyverse)
+conflict_prefer("filter", "dplyr")
+conflict_prefer("lag", "dplyr")
+```
+
+```{r}
+
+project <- read.table("C:\\Users\\rragh\\Downloads\\project.csv", header=TRUE, sep=",")
+
+```
+
+> Requirement 1:
+
+```{r}
+# We used the data frame to review the data
+data.frame(project)
+
+print(project)
+```
+```{r}
+project <- as_tibble(project)
+project
+
+```
+
+
+```{r}
+# Dimension of the data 
+dim(project)
+```
+
+```{r}
+# To summarize the data frame into just one value or vector
+summary(project)
+```
+ 
+```{r}
+# Return a list of objects and their structure.
+str(project)
+```
+
+> This data is about education employees, and it contains four values, which are Id, Rank, Experience and Salary. Out of str function the types of our dataset are: Numeric for ID, Character for Rank, Numeric for experience, and Numeric for salary, All data have the same range which is [ 1 : 403 ] We also have 400 employees with varying experience, and the salary starts from $57,800 Also the experiences starts from 1 year.
+
+
+
+> Requirement 2:
+
+```{r}
+# for null values
+colSums(is.na(project))
+```
+
+
+```{r}
+#Sum the null values
+sum(colSums(is.na(project)))
+```
+
+
+```{r}
+# for outlier  
+summary(project$Experience)
+```
+
+```{r}
+summary(project$Salary)
+```
+
+
+```{r}
+#Show the outlier in boxplot
+boxplot(project$Experience,
+  ylab = "Experience"
+)
+```
+
+```{r}
+boxplot.stats(project$Experience)$out
+```
+> The range of the experience is 60 and the outlier is 150
+
+```{r}
+#Show the outlier in boxplot
+boxplot(project$Salary,
+  ylab = "salary"
+)
+```
+
+```{r}
+boxplot.stats(project$Salary)$out
+```
+> The range of the salary is 204000-205500 and the outlier is 231545 
+
+```{r}
+#Sum the duplicated values
+sum(duplicated(project$ID))
+```
+> This is the 3 duplicated values
+
+```{r}
+# We check the Rank column if there are errors in writing the names or not
+name <- project %>%
+  filter(Rank != "AssocProf") %>%
+  filter(Rank != "AsstProf") %>%
+  filter(Rank != "Prof") %>%
+  group_by(Rank)
+
+```
+
+
+> Requirement 3:
+
+
+```{r}
+#remove duplicated
+project <- project[!duplicated(project$ID),]
+```
+
+
+```{r}
+
+sum(duplicated(project$ID))
+```
+
+
+
+```{r}
+#remove missing values
+project <- na.omit(project)
+```
+
+```{r}
+colSums(is.na(project))
+```
+
+```{r}
+# remove outliers salary
+quartiles <- quantile(project$Salary, probs=c(.25, .75))
+IQR <- IQR(project$Salary)
+ 
+Lower <- quartiles[1] - 1.5*IQR
+Upper <- quartiles[2] + 1.5*IQR 
+ 
+data <- subset(project, project$Salary > Lower & project$Salary < Upper)
+ 
+# Dimension of the data after removing the outlier 
+dim(data)
+```
+
+```{r}
+#Show the salary boxplot after remove the outlier
+boxplot(data$Salary,
+  ylab = "salary"
+)
+```
+
+```{r}
+# remove outliers Experience
+quartiles <- quantile(data$Experience, probs=c(.25, .75), na.rm = FALSE)
+IQR <- IQR(data$Experience)
+ 
+Lower <- quartiles[1] - 1.5*IQR
+Upper <- quartiles[2] + 1.5*IQR 
+ 
+data2 <- subset(data, data$Experience > Lower & data$Experience < Upper)
+ 
+# Dimension of the data after removing the outlier
+dim(data2)
+```
+
+```{r}
+#Show the Experience boxplot after remove the outlier
+boxplot(data2$Experience,
+  ylab = "Experience"
+)
+```
+
+```{r}
+# changing wrong names
+data2 <- mutate(data2, Rank = recode(.x=Rank, "AssocProff"="AssocProf"))
+```
+
+```{r}
+# changing wrong names
+data2 <- mutate(data2, Rank = recode(.x=Rank, "AssstProf"="AsstProf"))
+```
+
+
+```{r}
+# show data after preprocessinge
+data2
+```
+
+```{r}
+# show summary after preprocessinge
+summary(data2)
+
+```
+
+
+
+> Requirement 4:
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+# Bar chart for Faculty_Rank
+ggplot(data2, aes(x=Rank)) + geom_bar() + labs(title="Faculty Rank Distribution")
+
+```
+
+```{r}
+# Histogram for Salary
+ggplot(data2, aes(x=Salary)) + geom_histogram(binwidth=5000) + labs(title="Faculty Salary Distribution")
+
+```
+
+
+```{r}
+# Histogram for Experience
+ggplot(data2, aes(x=Experience)) + geom_histogram(binwidth=1) + labs(title="Faculty Experience Distribution")
+```
+
+
+> Requirement 5:
+
+```{r}
+# Scatterplot for Salary vs Experience colored by Faculty_Rank
+ggplot(data2, aes(x=Experience, y=Salary, color=Rank)) + geom_point() + geom_smooth(method = "lm") +labs(title="Faculty Salary vs Experience by Rank")
+```
+
+
+```{r}
+ggplot(data = data2, aes(x = Rank, y = Salary,color=Rank)) +
+  geom_violin()
+```
+
+
+```{r}
+ggplot(data2, aes(x=Rank, y=Experience,color=Rank)) +
+ 
+  geom_violin()
+```
+
+
+```{r}
+ggplot(data2, aes(y=Salary, x=Experience)) +
+ 
+  geom_violin()
+```
+
+
+```{r}
+base.plot <- ggplot(data2, aes(x = Rank)) +
+ xlab("Rank")
+base.plot + geom_density()
+```
+
+
+```{r}
+base.plot + geom_density(aes(fill = Rank), alpha = 0.6)
+```
+
+> Requirement 6:
+
+```{r}
+#"rank" affect "salary"
+mean_Salary <- data2 %>% group_by(Rank) %>% 
+  summarise(mean(Salary))
+
+```
+
+
+```{r}
+# Experience impact salary
+max_Experience_Salary  <- data2 %>% group_by(Rank) %>% 
+  summarise(max(Salary), max(Experience))
+```
+
+```{r}
+# gaps for employees with the same experience and rank
+gaps  <- data2 %>% group_by(Experience) %>% 
+  summarise(max(Salary),max(Rank))
+```
+
+```{r}
+head(gaps)
+```
+
